@@ -31,7 +31,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const { status, message } = this.resolve(exception);
+    const { status, body } = this.resolve(exception);
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       Sentry.captureException(exception, {
@@ -43,32 +43,32 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     response.status(status).json({
+      ...body,
       statusCode: status,
-      message,
       path: request.path ?? request.url,
       timestamp: new Date().toISOString(),
     });
   }
 
-  private resolve(exception: unknown): { status: number; message: string } {
+  private resolve(exception: unknown): { status: number; body: Record<string, unknown> } {
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       const status = PRISMA_ERROR_STATUS[exception.code];
       if (status) {
         return {
           status,
-          message: PRISMA_ERROR_MESSAGE[exception.code],
+          body: { message: PRISMA_ERROR_MESSAGE[exception.code] },
         };
       }
     }
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const body = exception.getResponse();
-      const message =
-        typeof body === 'string'
-          ? body
-          : (body as { message?: string | string[] }).message ?? exception.message;
-      return { status, message: Array.isArray(message) ? message.join(', ') : message };
+      const raw = exception.getResponse();
+      const body: Record<string, unknown> =
+        typeof raw === 'object' && raw !== null
+          ? { ...(raw as Record<string, unknown>) }
+          : { message: raw };
+      return { status, body };
     }
 
     this.logger.error(
@@ -77,7 +77,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error',
+      body: { message: 'Internal server error' },
     };
   }
 }

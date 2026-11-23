@@ -122,6 +122,33 @@ describe('HttpExceptionFilter', () => {
     });
   });
 
+  it('preserves message array from BadRequestException with ValidationPipe shape', () => {
+    const { BadRequestException } = require('@nestjs/common');
+    filter.catch(new BadRequestException({ message: ['a', 'b'], error: 'Bad Request' }), host);
+
+    const body = (response.json as jest.Mock).mock.calls[0][0];
+    expect(body.message).toEqual(['a', 'b']);
+    expect(body.error).toBe('Bad Request');
+  });
+
+  it('passes through extra keys (e.g. code) from an object exception body', () => {
+    const { BadRequestException } = require('@nestjs/common');
+    filter.catch(new BadRequestException({ message: 'invalid input', code: 'INVALID_EMAIL' }), host);
+
+    const body = (response.json as jest.Mock).mock.calls[0][0];
+    expect(body.message).toBe('invalid input');
+    expect(body.code).toBe('INVALID_EMAIL');
+    expect(body.statusCode).toBe(HttpStatus.BAD_REQUEST);
+  });
+
+  it('handles a plain string exception body correctly', () => {
+    filter.catch(new HttpException('simple string error', HttpStatus.FORBIDDEN), host);
+
+    const body = (response.json as jest.Mock).mock.calls[0][0];
+    expect(body.message).toBe('simple string error');
+    expect(body.statusCode).toBe(HttpStatus.FORBIDDEN);
+  });
+
   it('configures Sentry environment and release from deployment settings', () => {
     process.env.SENTRY_DSN = 'https://public@example.test/1';
     process.env.SENTRY_ENVIRONMENT = 'production';

@@ -3,7 +3,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { StellarService } from '../../common/stellar/stellar.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { CoursesService } from '../courses/courses.service';
 import { NotificationType } from '@prisma/client';
 
 /** Fixed primary key for the singleton poller checkpoint row. */
@@ -60,7 +59,6 @@ export class EventsService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly stellar: StellarService,
     private readonly notifications: NotificationsService,
-    private readonly courses: CoursesService,
   ) {}
 
   async onModuleInit() {
