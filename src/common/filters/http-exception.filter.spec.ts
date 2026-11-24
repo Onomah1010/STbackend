@@ -55,6 +55,8 @@ describe('HttpExceptionFilter', () => {
     });
     expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
       path: '/api/v1/users',
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Internal server error',
     }));
   });
 
@@ -62,6 +64,45 @@ describe('HttpExceptionFilter', () => {
     filter.catch(new HttpException('Not found', HttpStatus.NOT_FOUND), host);
 
     expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('preserves array messages and standard error fields from HttpException bodies', () => {
+    filter.catch(
+      new HttpException(
+        { message: ['a', 'b'], error: 'Bad Request' },
+        HttpStatus.BAD_REQUEST,
+      ),
+      host,
+    );
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: ['a', 'b'],
+      error: 'Bad Request',
+    }));
+  });
+
+  it('preserves application-specific fields from HttpException bodies', () => {
+    filter.catch(
+      new HttpException(
+        { message: 'Invalid input', code: 'INVALID_INPUT' },
+        HttpStatus.BAD_REQUEST,
+      ),
+      host,
+    );
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Invalid input',
+      code: 'INVALID_INPUT',
+    }));
+  });
+
+  it('wraps a plain string HttpException response as a message', () => {
+    filter.catch(new HttpException('Bad request', HttpStatus.BAD_REQUEST), host);
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Bad request',
+      statusCode: HttpStatus.BAD_REQUEST,
+    }));
   });
 
   it('maps Prisma P2002 unique violations to 409 Conflict', () => {

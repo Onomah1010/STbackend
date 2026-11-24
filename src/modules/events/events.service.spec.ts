@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { StellarService } from '../../common/stellar/stellar.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { CoursesService } from '../courses/courses.service';
 import { EventsService, EVENT_POLLER_CHECKPOINT_KEY } from './events.service';
 
 describe('EventsService — ledger checkpoint (Issue #80)', () => {
@@ -25,7 +24,6 @@ describe('EventsService — ledger checkpoint (Issue #80)', () => {
   };
 
   const mockNotifications = { notifyUser: jest.fn() };
-  const mockCourses = {};
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -34,7 +32,6 @@ describe('EventsService — ledger checkpoint (Issue #80)', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: StellarService, useValue: mockStellar },
         { provide: NotificationsService, useValue: mockNotifications },
-        { provide: CoursesService, useValue: mockCourses },
       ],
     }).compile();
 
